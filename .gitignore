@@ -1,0 +1,4 @@
+vendor/**
+build/**
+serverless.env.yml
+dbconf.yml

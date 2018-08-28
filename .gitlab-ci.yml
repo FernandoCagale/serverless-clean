@@ -1,0 +1,85 @@
+stages:
+  - build
+  - migrate
+  - deploy
+
+build:
+  image: golang:1.10
+  stage: build
+  before_script: 
+    - go get -v github.com/golang/dep/cmd/dep
+    - ln -s /builds /go/src/gitlab.com
+    - cd /go/src/gitlab.com/${CI_PROJECT_PATH}
+  script:
+    - dep ensure
+    - go test ./...
+    - CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o build/api api/main.go
+  artifacts:
+    paths:
+      - build/api
+
+dev-migrate:
+  image: golang:1.10
+  stage: migrate
+  before_script: 
+    - go get -u bitbucket.org/liamstask/goose/cmd/goose
+    - ln -s /builds /go/src/gitlab.com
+    - cd /go/src/gitlab.com/${CI_PROJECT_PATH}
+  script:
+    - goose -env development up
+  only:
+    - dev
+
+dev:
+  stage: deploy
+  image: node:8.10
+  script:
+    - npm install serverless -g --silent
+    - serverless config credentials --provider aws --key ${AWS_ACCESS_KEY_ID} --secret ${AWS_SECRET_ACCESS_KEY}
+    - serverless deploy --stage dev
+  only:
+    - dev
+
+staging-migrate:
+  image: golang:1.10
+  stage: migrate
+  before_script: 
+    - go get -u bitbucket.org/liamstask/goose/cmd/goose
+    - ln -s /builds /go/src/gitlab.com
+    - cd /go/src/gitlab.com/${CI_PROJECT_PATH}
+  script:
+    - goose -env staging up
+  only:
+    - staging
+
+staging:
+  stage: deploy
+  image: node:8.10
+  script:
+    - npm install serverless -g --silent
+    - serverless config credentials --provider aws --key ${AWS_ACCESS_KEY_ID} --secret ${AWS_SECRET_ACCESS_KEY}
+    - serverless deploy --stage staging
+  only:
+    - staging
+
+prod-migrate:
+  image: golang:1.10
+  stage: migrate
+  before_script: 
+    - go get -u bitbucket.org/liamstask/goose/cmd/goose
+    - ln -s /builds /go/src/gitlab.com
+    - cd /go/src/gitlab.com/${CI_PROJECT_PATH}
+  script:
+    - goose -env production up
+  only:
+    - master
+
+prod:
+  stage: deploy
+  image: node:8.10
+  script:
+    - npm install serverless -g --silent
+    - serverless config credentials --provider aws --key ${AWS_ACCESS_KEY_ID} --secret ${AWS_SECRET_ACCESS_KEY}
+    - serverless deploy --stage prod
+  only:
+    - master

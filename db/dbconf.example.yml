@@ -1,0 +1,11 @@
+development:
+  driver: postgres
+  open: postgres://<user>:<password>@<ip>:5432/<database>
+
+staging:
+  driver: postgres
+  open: $URL_STATING
+
+production:
+  driver: postgres
+  open: $URL_PROD 

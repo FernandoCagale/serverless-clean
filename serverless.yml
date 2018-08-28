@@ -1,0 +1,22 @@
+service: serverless-clean
+
+provider:
+  name: aws
+  runtime: go1.x
+  environment:
+    DATASTORE_URL: ${file(./serverless.env.yml):${opt:stage, self:provider.stage}.DATASTORE_URL}  
+
+functions:
+  api:
+    handler: build/api
+    events:
+      - http:
+          path: "{proxy+}"
+          method: any
+          cors: true
+
+package:
+  exclude:
+    - ./**
+  include:
+    - ./build/**
